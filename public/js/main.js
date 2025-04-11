@@ -1,5 +1,5 @@
 // Connect to WebSocket server
-const socket = io('http://localhost:8000', {
+const socket = io({
     transports: ['websocket'],
     upgrade: false,
     withCredentials: true
@@ -49,7 +49,7 @@ socket.on('initialData', (newOpportunities) => {
     updateOpportunitiesGrid();
 });
 
-socket.on('newOpportunity', (newOpportunities) => {
+socket.on('opportunities', (newOpportunities) => {
     console.log('Received new opportunities:', newOpportunities);
     opportunities = newOpportunities || [];
     updateOpportunitiesGrid();
@@ -58,11 +58,17 @@ socket.on('newOpportunity', (newOpportunities) => {
 // Show/hide loading state
 const toggleLoading = (show) => {
     loadingState.classList.toggle('hidden', !show);
+    if (show) {
+        opportunitiesGrid.innerHTML = '';
+    }
 };
 
 // Show/hide error state
 const toggleError = (show) => {
     errorState.classList.toggle('hidden', !show);
+    if (show) {
+        toggleLoading(false);
+    }
 };
 
 // Update connection status
@@ -72,10 +78,12 @@ const updateConnectionStatus = (connected) => {
         connectionStatus.textContent = 'Connected';
         connectionStatus.classList.remove('bg-red-100', 'text-red-800');
         connectionStatus.classList.add('bg-green-100', 'text-green-800');
+        toggleError(false);
     } else {
         connectionStatus.textContent = 'Disconnected';
         connectionStatus.classList.remove('bg-green-100', 'text-green-800');
         connectionStatus.classList.add('bg-red-100', 'text-red-800');
+        toggleError(true);
     }
 };
 
@@ -92,6 +100,14 @@ const formatDateTime = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', options);
 };
 
+// Format currency
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(amount);
+};
+
 // Create opportunity card
 const createOpportunityCard = (opportunity) => {
     const card = document.createElement('div');
@@ -102,19 +118,25 @@ const createOpportunityCard = (opportunity) => {
             <div class="flex items-center justify-between mb-4">
                 <span class="text-sm font-medium text-gray-500">${opportunity.league}</span>
                 <span class="px-3 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full">
-                    ${opportunity.profit}% Profit
+                    ${opportunity.profit.toFixed(2)}% Profit
                 </span>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 mb-2">${opportunity.match}</h3>
             <div class="text-sm text-gray-600 mb-4">
                 <p><i class="far fa-clock mr-2"></i>${formatDateTime(opportunity.datetime)}</p>
-                <p><i class="fas fa-tag mr-2"></i>${opportunity.bets[0].market}</p>
+                <p><i class="fas fa-wallet mr-2"></i>Total Stake: ${formatCurrency(opportunity.totalStake)}</p>
             </div>
-            <div class="space-y-2 mb-4">
+            <div class="space-y-3 mb-4">
                 ${opportunity.bets.map(bet => `
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-600">${bet.bookmaker}</span>
-                        <span class="font-medium">${bet.odds}</span>
+                    <div class="bg-gray-50 p-3 rounded-md">
+                        <div class="flex justify-between items-center text-sm mb-2">
+                            <span class="font-medium text-gray-900">${bet.bookmaker}</span>
+                            <span class="text-indigo-600 font-semibold">Odds: ${bet.odds.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">${bet.market}</span>
+                            <span class="font-medium">Stake: ${formatCurrency(bet.stake)}</span>
+                        </div>
                     </div>
                 `).join('')}
             </div>
@@ -201,6 +223,11 @@ const updateFilterOptions = () => {
     [...bookmakers].sort().forEach(bookmaker => {
         bookmakerFilter.innerHTML += `<option value="${bookmaker}">${bookmaker}</option>`;
     });
+
+    // Restore selected values
+    leagueFilter.value = filters.league;
+    bookmakerFilter.value = filters.bookmaker;
+    minProfitFilter.value = filters.minProfit;
 };
 
 // Event Listeners
