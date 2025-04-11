@@ -34,7 +34,7 @@ const calculateArbitrage = (normalizedData) => {
                                 league: event.league,
                                 datetime: event.datetime,
                                 profit: parseFloat(profit),
-                                totalStake: 100, // Normalized to 100 units
+                                totalStake: 3, // Minimum stake of $3
                                 bets: [
                                     {
                                         bookmaker: homeMarket.bookmaker,
@@ -65,7 +65,7 @@ const calculateArbitrage = (normalizedData) => {
 };
 
 const calculateOptimalStakes = (markets) => {
-    const totalStake = 100; // Normalize to 100 units
+    const totalStake = 3; // Minimum stake of $3
     const impliedProbabilities = markets.map(market => 1 / market.market.odds);
     const sum = impliedProbabilities.reduce((a, b) => a + b, 0);
     
