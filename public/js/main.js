@@ -102,10 +102,14 @@ const formatDateTime = (dateString) => {
 
 // Format currency
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    // Convert to ZMK (multiply by approximate exchange rate of 1 USD = 22 ZMK)
+    const zmkAmount = amount * 22;
+    return new Intl.NumberFormat('en-ZM', {
         style: 'currency',
-        currency: 'USD'
-    }).format(amount);
+        currency: 'ZMK',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(zmkAmount);
 };
 
 // Create opportunity card
